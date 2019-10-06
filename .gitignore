@@ -1,6 +1,7 @@
 #Dont add the following sub-dirs:
 env_chatbot/
 __pycache__/
+.idea/
 
 # Compiled source #
 ###################

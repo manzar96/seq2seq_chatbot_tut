@@ -21,8 +21,8 @@ quest, ans = x.load_data('/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          '/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          'movie_conversations.txt')
 
-quest = quest[:10000]
-ans = ans[:10000]
+quest = quest[:1000]
+ans = ans[:1000]
 
 # concatenate data for easier preprocessing, but keep lengths
 quest_len = len(quest)
@@ -115,7 +115,7 @@ dec = DecoderLSTM(vocloader.embeddings, dec_hidden_size, dec_output_size,
 
 
 
-num_epochs = 100
+num_epochs = 10
 teacher_forcing_rat =0.6
 clip=50
 criterion = nn.CrossEntropyLoss(ignore_index=vocloader.word2idx['PAD'])
@@ -176,14 +176,14 @@ for epoch in range(num_epochs):
             loss += criterion(dec_outs[t], targets[:,t].long())
         #print("Loss calculated")
         # Perform backpropatation
-        loss.backward(retain_graph=True)
+        loss.backward()
         running_average_loss += loss / max_target_len
         #print("backprop done")
 
 
         # Clip gradients: gradients are modified in place
-        _ = nn.utils.clip_grad_norm_(enc.parameters(), clip)
-        _ = nn.utils.clip_grad_norm_(dec.parameters(), clip)
+        # _ = nn.utils.clip_grad_norm_(enc.parameters(), clip)
+        # _ = nn.utils.clip_grad_norm_(dec.parameters(), clip)
 
         # Adjust model weights
         enc_optimizer.step()
