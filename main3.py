@@ -105,93 +105,29 @@ dec_vocab_size = vocloader.embeddings.shape[0]
 dec_output_size = dec_vocab_size
 dec_n_layers = 2
 max_target_len = max_len_trg
-dec = DecoderLSTM(vocloader.embeddings, dec_hidden_size, dec_output_size,
-                  max_target_len, dec_n_layers, batch_first=True)
+dec = DecoderLSTM_v2(vocloader.embeddings, dec_hidden_size, dec_output_size,
+                     max_target_len, dec_n_layers, batch_first=True)
 
 
-
-
-
-
-num_epochs = 10
+# make the encoder decoder model
 teacher_forcing_rat =0.6
-clip=50
+model = EncoderDecoder(enc,dec,vocloader,teacher_forcing_rat)
+model.cuda()
+print(model)
 
+
+# select optimizers,loss function and clipping value
 criterion = nn.CrossEntropyLoss(ignore_index=vocloader.word2idx['PAD'],
                                 reduction='mean')
-
-
 enc_optimizer = torch.optim.Adam(enc.parameters(),lr=0.0001)
 dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.0005)
+model_optimizers = [enc_optimizer,dec_optimizer]
+clip = 50
 
-device=torch.device("cuda")
-enc.cuda()
-dec.cuda()
+num_epochs = 10
 
 for epoch in range(num_epochs):
-    # no need to set requires_grad=True for parameters(weights)  as it done
-    # by default. Also for input requires_grad is not
-    # always necessary. So we comment the following line.
-    # with torch.autograd():
-
-    enc.train()
-    dec.train()
-    # scheduler.step()
-    print_loss = 0
-
-    # train model in each epoch
-    for index, batch in enumerate(train_batches):
-
-        inputs, lengths_inputs, targets, masks_targets = batch
-        inputs = inputs.long().cuda()
-        targets = targets.long().cuda()
-        lengths_inputs.cuda()
-        masks_targets.cuda()
-
-        enc_optimizer.zero_grad()
-        dec_optimizer.zero_grad()
-
-        enc_out, enc_hidden = enc(inputs, lengths_inputs)
-
-        # 1.Create initial decoder input (start with SOS tokens for each turn)
-        # 2.enc_hidden is a tuple (2nd term is grad)
-        # from each layer of the encoder we receive the last hidden state and
-        # set it to our decoder hidden state!
-
-        decoder_input = [[vocloader.word2idx['SOT']for _ in range(batch[0].shape[0])]]
-        decoder_input = torch.LongTensor(decoder_input)
-
-        decoder_input = decoder_input.transpose(0, 1)
-        #print("enc hidden",enc_hidden[0].shape)
-        #print("dec input",decoder_input.shape)
-        decoder_hidden = enc_hidden[:dec.num_layers]
-        decoder_input = decoder_input.cuda()
-        dec_outs, dec_hidden = dec(decoder_input, enc_hidden, targets,
-                                   teacher_forcing_rat)
-
-        loss= 0
-        n_total = 0
-        for t in range(0, max_target_len):
-            # Calculate and accumulate loss
-            #top_index = F.softmax(dec_outs[t], dim=0)
-            #value, pos_index = top_index.max(dim=1)
-            loss += criterion(dec_outs[t], targets[:, t].long())
-            n_total += 1
-        #print("Loss calculated")
-        # Perform backpropatation
-        loss.backward()
-        print_loss += loss / n_total
-        #print("backprop done")
-
-
-        # Clip gradients: gradients are modified in place
-        # _ = nn.utils.clip_grad_norm_(enc.parameters(), clip)
-        # _ = nn.utils.clip_grad_norm_(dec.parameters(), clip)
-
-        # Adjust model weights
-        enc_optimizer.step()
-        dec_optimizer.step()
-        last =index
+    model.train()
+    avg_epoch_loss = train(train_batches, model, model_optimizers, criterion)
     print("Epoch: {} \t \t Training Loss {}".format(epoch, float(
-        print_loss) / (last + 1)))
-
+        avg_epoch_loss)))

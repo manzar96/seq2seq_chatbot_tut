@@ -141,7 +141,6 @@ class DecoderLSTM(nn.Module):
 
     def forward_step(self, dec_input, dec_hidden):
         dec_input.cuda()
-
         embedded = self.embedding(dec_input)
         decoder_output, decoder_hidden = self.decoder(embedded,
                                                       dec_hidden)
@@ -194,28 +193,131 @@ class DecoderLSTM(nn.Module):
         return decoder_all_outputs, dec_hidden
 
 
-class Seq2Seq(nn.Module):
-    def __init__(self, encoder, decoder, max_target_len):
-        super(Seq2Seq).__init__()
+class DecoderLSTM_v2(nn.Module):
+    def __init__(self, weights_matrix, hidden_size, output_size,
+                 max_target_len, num_layers=1, dropout=0, bidirectional=False,
+                 batch_first=False):
+
+        super(DecoderLSTM_v2, self).__init__()
+        self.vocab_size, self.input_size = weights_matrix.shape
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.bidirectional = bidirectional
+        self.batch_first = batch_first
+        self.dropout = (0 if self.num_layers == 1 else dropout)
+        self.max_target_len = max_target_len
+
+        if self.bidirectional:
+            self.embedding = self.create_emb_layer(weights_matrix,
+                                                   trainable=False)
+            self.decoder = nn.LSTM(input_size=self.input_size,
+                                   hidden_size=self.hidden_size//2,
+                                   num_layers=self.num_layers,
+                                   bidirectional=self.bidirectional,
+                                   dropout=self.dropout,
+                                   batch_first=self.batch_first)
+
+            self.out = nn.Linear(self.hidden_size//2, self.output_size)
+
+        else:
+            self.embedding = self.create_emb_layer(weights_matrix,
+                                                   trainable=False)
+            self.decoder = nn.LSTM(input_size=self.input_size,
+                                   hidden_size=self.hidden_size,
+                                   num_layers=self.num_layers,
+                                   bidirectional=self.bidirectional,
+                                   dropout=self.dropout,
+                                   batch_first=self.batch_first)
+
+            self.out = nn.Linear(self.hidden_size, self.output_size)
+
+    def create_emb_layer(self, weights_matrix, trainable=False):
+        embedding = nn.Embedding(self.vocab_size, self.input_size)
+        weights = torch.FloatTensor(weights_matrix)
+        #embedding.weight.data.copy_(weights)
+        embedding.weight = nn.Parameter(weights)
+        embedding.weight.requires_grad = trainable
+
+        return embedding
+
+    def forward(self, dec_input, dec_hidden):
+        dec_input.cuda()
+        embedded = self.embedding(dec_input)
+        decoder_output, decoder_hidden = self.decoder(embedded,
+                                                      dec_hidden)
+        decoder_output = self.out(decoder_output)
+        return decoder_output, decoder_hidden
+
+
+class EncoderDecoder(nn.Module):
+    def __init__(self, encoder, decoder, vocloader,
+                 teacher_forcing_ratio=0):
+        super(EncoderDecoder, self).__init__()
 
         # initialize the encoder and decoder
         self.encoder = encoder
         self.decoder = decoder
+        self.max_target_len = self.decoder.max_target_len
+        self.teacher_forcing_ratio = teacher_forcing_ratio
+        self.vocloader = vocloader  # vocloader is needed to know  the SOT
+        # index fore the decoder!
 
-    def forward(self, input_seq, target_seq, teacher_forcing_ratio=0.5):
+    def forward(self, input_seq, lengths_inputs, target_seq):
 
         batch_size = input_seq.shape[0]
-        target_length = target_seq.shape[1]
-        embedding_size = self.decoder.output_dim
 
-        # initialize a variable to hold the predicted outputs
-        outputs = torch.zeros(batch_size, target_length, embedding_size).to(
-            self.device)
+        encoder_output, encoder_hidden = self.encoder(input_seq, lengths_inputs)
 
-        encoder_output, encoder_hidden = self.encoder(input_seq)
+        decoder_input = [[self.vocloader.word2idx['SOT'] for _ in range(
+            batch_size)]]
 
-        # use the encoder’s hidden layer as the decoder hidden
+        decoder_input = torch.LongTensor(decoder_input)
+
+        decoder_input = decoder_input.transpose(0, 1)
         decoder_hidden = encoder_hidden[:self.decoder.num_layers]
+        decoder_input = decoder_input.cuda()
+        # Determine if we are using teacher forcing this iteration
+        use_teacher_forcing = True if random.random() \
+                                      < self.teacher_forcing_ratio else False
 
+        decoder_all_outputs = []
+        if use_teacher_forcing:
 
+            for t in range(0, self.max_target_len):
+
+                decoder_output, decoder_hidden = self.decoder(decoder_input,
+                                                              decoder_hidden)
+
+                decoder_all_outputs.append(torch.squeeze(decoder_output, dim=1))
+                # Teacher forcing: next input is current target
+                decoder_input = target_seq[:, t]
+                decoder_input = torch.unsqueeze(decoder_input, dim=1)
+
+        else:
+            for t in range(0, self.max_target_len):
+
+                decoder_output, decoder_hidden = self.decoder(decoder_input,
+                                                              decoder_hidden)
+
+                decoder_all_outputs.append(torch.squeeze(decoder_output, dim=1))
+
+                # No Teacher forcing: next input is previous output
+                current_output = torch.squeeze(decoder_output, dim=1)
+                # print("current out",current_output.shape)
+                # _, topi = current_output.topk(1)
+                # print("topi: ",topi.shape)
+                # topi = torch.squeeze(topi, dim=1)
+
+                top_index = F.softmax(current_output, dim=0)
+                value, pos_index = top_index.max(dim=1)
+                #top1 = current_output.topk(1)
+                #print("top1     ",top1)
+                #print("pos_index    ",pos_index)
+                decoder_input = [index for index in pos_index]
+                decoder_input = torch.LongTensor(decoder_input)
+                decoder_input = torch.unsqueeze(decoder_input,dim=1)
+                decoder_input = decoder_input.cuda()
+
+        return decoder_all_outputs, decoder_hidden
 
