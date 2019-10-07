@@ -1,4 +1,6 @@
 import torch.nn as nn
+import os
+import torch
 
 
 def data2pairs(questions,answers):
@@ -105,3 +107,54 @@ def train(train_batches, model, model_optimizer, criterion, clip=None):
         last = index
     # we return average epoch loss
     return epoch_loss/(last+1)
+
+
+def train_epochs(training_batches, model_name, model, model_optimizer,
+                 criterion, save_dir, num_epochs, print_every,
+                 save_every, corpus_name, clip=None):
+
+    print("Training...")
+
+    for epoch in range(num_epochs+1):
+        avg_epoch_loss = 0
+
+        # Train to all batches
+        if clip is not None:
+            avg_epoch_loss = train(training_batches, model, model_optimizer,
+                                   criterion, clip)
+        else:
+            avg_epoch_loss = train(training_batches, model, model_optimizer,
+                                   criterion)
+
+        # Print progress
+        if epoch % print_every == 0:
+            print("Epoch {}; Percent complete: {:.1f}%; Average Epoch loss: {"
+                  ":.4f}".format(epoch, epoch / num_epochs * 100,
+                                 avg_epoch_loss))
+
+        # Save checkpoint
+        if epoch % save_every == 0:
+            directory = os.path.join(save_dir, model_name, corpus_name)
+
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            if isinstance(model_optimizer, list):
+                torch.save({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'model_opt_enc': model_optimizer[0].state_dict(),
+                    'model_opt_dec': model_optimizer[1].state_dict(),
+                    'loss': avg_epoch_loss,
+
+                }, os.path.join(directory, '{}_{}.tar'.format(epoch,
+                                                              'checkpoint')))
+            else:
+                torch.save({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'model_opt': model_optimizer.state_dict(),
+                    'loss': avg_epoch_loss,
+
+                }, os.path.join(directory, '{}_{}.tar'.format(epoch,
+                                                              'checkpoint')))

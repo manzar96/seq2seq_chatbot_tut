@@ -38,7 +38,7 @@ class WordEmbLoader:
 
     def load_gensim(self,embfile):
         model = gensim.models.KeyedVectors.load_word2vec_format(embfile,
-                                                                limit=5000,
+                                                                limit=50000,
                                                                 binary=True)
         word2idx = {}
         idx2word = {}

@@ -21,8 +21,8 @@ quest, ans = x.load_data('/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          '/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          'movie_conversations.txt')
 
-quest = quest[:1000]
-ans = ans[:1000]
+quest = quest[:10000]
+ans = ans[:10000]
 
 # concatenate data for easier preprocessing, but keep lengths
 quest_len = len(quest)
@@ -124,10 +124,30 @@ dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.0005)
 model_optimizers = [enc_optimizer,dec_optimizer]
 clip = 50
 
-num_epochs = 10
+num_epochs = 301
 
-for epoch in range(num_epochs):
-    model.train()
-    avg_epoch_loss = train(train_batches, model, model_optimizers, criterion)
-    print("Epoch: {} \t \t Training Loss {}".format(epoch, float(
-        avg_epoch_loss)))
+# for epoch in range(num_epochs):
+#     model.train()
+#     avg_epoch_loss = train(train_batches, model, model_optimizers, criterion,
+#                            clip)
+#     print("Epoch: {} \t \t Training Loss {}".format(epoch, float(
+#         avg_epoch_loss)))
+
+
+model_name = "simple_encdec"
+save_dir = "/media/manzar/Data/toshiba_temp/diplwmatiki/chatbot/saved_models"
+print_every = 5
+save_every = 20
+corpus_name = "MovieCorpus_Cornell"
+train_epochs(train_batches, model_name, model, model_optimizers, criterion,
+             save_dir, num_epochs, print_every, save_every, corpus_name,clip)
+
+
+
+# load my model:
+# checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki'
+#                             '/chatbot'
+#                '/saved_models/simple_encdec/MovieCorpus_Cornell/15_checkpoint.tar')
+#
+#
+# model = checkpoint['model']
