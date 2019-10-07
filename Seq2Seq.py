@@ -269,7 +269,7 @@ class EncoderDecoder(nn.Module):
 
         encoder_output, encoder_hidden = self.encoder(input_seq, lengths_inputs)
 
-        decoder_input = [[self.vocloader.word2idx['SOT'] for _ in range(
+        decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
             batch_size)]]
 
         decoder_input = torch.LongTensor(decoder_input)
@@ -321,3 +321,48 @@ class EncoderDecoder(nn.Module):
 
         return decoder_all_outputs, decoder_hidden
 
+    def evaluate(self, input_seq, lengths_inputs):
+
+        batch_size = input_seq.shape[0]
+
+        encoder_output, encoder_hidden = self.encoder(input_seq, lengths_inputs)
+
+        decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
+            batch_size)]]
+
+        decoder_input = torch.LongTensor(decoder_input)
+
+        decoder_input = decoder_input.transpose(0, 1)
+        decoder_hidden = encoder_hidden[:self.decoder.num_layers]
+        decoder_input = decoder_input.cuda()
+
+        decoder_all_outputs = []
+
+        for t in range(0, self.max_target_len):
+
+            decoder_output, decoder_hidden = self.decoder(decoder_input,
+                                                          decoder_hidden)
+
+            decoder_all_outputs.append(torch.squeeze(decoder_output,
+                                                     dim=1).tolist())
+
+            # No Teacher forcing: next input is previous output
+            current_output = torch.squeeze(decoder_output, dim=1)
+            # print("current out",current_output.shape)
+            # _, topi = current_output.topk(1)
+            # print("topi: ",topi.shape)
+            # topi = torch.squeeze(topi, dim=1)
+
+            top_index = F.softmax(current_output, dim=0)
+            value, pos_index = top_index.max(dim=1)
+            #top1 = current_output.topk(1)
+            #print("top1     ",top1)
+            #print("pos_index    ",pos_index)
+            decoder_input = [index for index in pos_index]
+            decoder_input = torch.LongTensor(decoder_input)
+            decoder_input = torch.unsqueeze(decoder_input,dim=1)
+            decoder_input = decoder_input.cuda()
+
+        decoder_all_outputs = torch.FloatTensor(
+            decoder_all_outputs).transpose(0,1)
+        return decoder_all_outputs, decoder_hidden

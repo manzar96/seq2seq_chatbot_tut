@@ -59,6 +59,9 @@ vocloader = EmbVoc(tag_dict)
 vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
                          '/GoogleNews-vectors-negative300.bin',sel="gensim")
 
+print(vocloader.word2idx['PAD'])
+print(vocloader.word2idx['<PAD>'])
+
 # load indexes
 idxloader = IndexesLoader(vocloader, unk_token=vocloader.word2idx['<UNK>'],
                           end_token=vocloader.word2idx['<EOS>'])
@@ -85,13 +88,12 @@ dataset = QADataset(padded_inputs,lengths_inputs,padded_targets,
                     masks_targets, max_len_trg)
 
 BATCH_SZ_train = 32
-BATCH_SZ_val = 3
+BATCH_SZ_val = 1
 batchloader = Batchloader()
 train_batches, val_batches = batchloader.torch_train_val_split(dataset,
                                                                BATCH_SZ_train,
                                                                BATCH_SZ_val,
                                                                val_size=0.33)
-
 
 # make the encoder
 enc_hidden_size = 100
@@ -112,42 +114,15 @@ dec = DecoderLSTM_v2(vocloader.embeddings, dec_hidden_size, dec_output_size,
 # make the encoder decoder model
 teacher_forcing_rat =0.6
 model = EncoderDecoder(enc,dec,vocloader,teacher_forcing_rat)
-model.cuda()
-print(model)
-
-
-# select optimizers,loss function and clipping value
-criterion = nn.CrossEntropyLoss(ignore_index=vocloader.word2idx['<PAD>'],
-                                reduction='mean')
-enc_optimizer = torch.optim.Adam(enc.parameters(),lr=0.0001)
-dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.0005)
-model_optimizers = [enc_optimizer,dec_optimizer]
-clip = 50
-
-num_epochs = 301
-
-# for epoch in range(num_epochs):
-#     model.train()
-#     avg_epoch_loss = train(train_batches, model, model_optimizers, criterion,
-#                            clip)
-#     print("Epoch: {} \t \t Training Loss {}".format(epoch, float(
-#         avg_epoch_loss)))
-
-
-model_name = "simple_encdec"
-save_dir = "/media/manzar/Data/toshiba_temp/diplwmatiki/chatbot/saved_models"
-print_every = 5
-save_every = 20
-corpus_name = "MovieCorpus_Cornell"
-train_epochs(train_batches, model_name, model, model_optimizers, criterion,
-             save_dir, num_epochs, print_every, save_every, corpus_name,clip)
-
-
 
 # load my model:
-# checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki'
-#                             '/chatbot'
-#                '/saved_models/simple_encdec/MovieCorpus_Cornell/15_checkpoint.tar')
-#
-#
-# model = checkpoint['model']
+checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki'
+                            '/chatbot'
+               '/saved_models/simple_encdec/MovieCorpus_Cornell/300_checkpoint'
+                        '.tar')
+
+
+model.load_state_dict(checkpoint['model'])
+model.cuda()
+
+validate(val_batches, model)

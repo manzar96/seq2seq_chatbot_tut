@@ -1,6 +1,8 @@
 import torch.nn as nn
+import torch.nn.functional as F
 import os
 import torch
+import numpy as np
 
 
 def data2pairs(questions,answers):
@@ -114,7 +116,7 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
                  save_every, corpus_name, clip=None):
 
     print("Training...")
-
+    model.train()
     for epoch in range(num_epochs+1):
         avg_epoch_loss = 0
 
@@ -158,3 +160,43 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
 
                 }, os.path.join(directory, '{}_{}.tar'.format(epoch,
                                                               'checkpoint')))
+
+def validate( val_batches, model):
+    """
+    This function is used for validating the model!
+    Model does not use "forward" but "evaluate , because we don't want to use
+    teacher forcing!
+    :param val_batches: batches given for validation
+    :param model: trained model that need to have evaluate function (like
+    forward)
+    :return:
+    """
+
+    print("Evaluating model...")
+    model.eval()
+    with torch.no_grad():
+        for index, batch in enumerate(val_batches):
+            inputs, lengths_inputs, targets, masks_targets = batch
+            inputs = inputs.long().cuda()
+            targets = targets.long().cuda()
+            lengths_inputs.cuda()
+            masks_targets.cuda()
+
+            decoder_outputs, decoder_hidden = model.evaluate(inputs,
+                                                             lengths_inputs)
+            # decoder_outputs is a 3d tensor(batchsize,seq length,outputsize)
+
+            for batch_index in range(decoder_outputs.shape[0]):
+                out_logits = F.log_softmax(decoder_outputs[batch_index],dim=1)
+                _,out_indexes = torch.max(out_logits,dim=1)
+
+                print("Question: ", inputs[batch_index])
+                print("Target: ",targets[batch_index])
+                print("Response: ",out_indexes)
+
+                print("+++++++++++++++++++++")
+
+
+
+
+
