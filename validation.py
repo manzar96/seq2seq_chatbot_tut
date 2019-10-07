@@ -59,8 +59,10 @@ vocloader = EmbVoc(tag_dict)
 vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
                          '/GoogleNews-vectors-negative300.bin',sel="gensim")
 
-print(vocloader.word2idx['PAD'])
-print(vocloader.word2idx['<PAD>'])
+
+print(vocloader.idx2word[16751])
+print(vocloader.idx2word[3])
+print(vocloader.idx2word[2])
 
 # load indexes
 idxloader = IndexesLoader(vocloader, unk_token=vocloader.word2idx['<UNK>'],
@@ -125,4 +127,5 @@ checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki'
 model.load_state_dict(checkpoint['model'])
 model.cuda()
 
-validate(val_batches, model)
+#validate(val_batches, model)
+inputInteraction(model,vocloader,txtpr,token,idxloader,padder)

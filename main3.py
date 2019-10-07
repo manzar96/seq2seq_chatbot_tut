@@ -30,7 +30,7 @@ ans_len = len(ans)
 data = quest + ans
 
 # Preprocess data
-txtpr = TextProcessor(lowercase=True, cleaning=True)
+txtpr = TextProcessor(lowercase=True, cleaning=True, remove_punct=True)
 filt_data = txtpr.process_text(data)
 
 # Split filtered sentences to words
@@ -41,11 +41,12 @@ data_tok = token.word_tokenization(filt_data)
 # Apply some threshold-filtering
 min_len= 2
 max_len = 25
-data_tok,quest_len,ans_len = threshold_filtering(min_len,max_len,data_tok,quest_len)
+data_tok,quest_len,ans_len = threshold_filtering(min_len,max_len,data_tok,
+                                                 quest_len)
 print(quest_len)
 # Create voc with indexes
 # at first we create custom embeddings
-emb_dim = 300
+emb_dim = 100
 pad_token_idx = 0
 end_token_idx = 2
 unk_token_idx = 3
@@ -54,10 +55,10 @@ tag_dict = {'<PAD>': np.zeros(emb_dim), '<SOT>': np.random.rand(emb_dim),
             '<EOS>': np.random.rand(emb_dim), '<UNK>': np.random.rand(emb_dim)}
 
 vocloader = EmbVoc(tag_dict)
-# vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/'
-#                          'glove/glove.6B/glove.6B.100d.txt')
-vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
-                         '/GoogleNews-vectors-negative300.bin',sel="gensim")
+vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/'
+                          'glove/glove.6B/glove.6B.100d.txt')
+#vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
+#                         '/GoogleNews-vectors-negative300.bin',sel="gensim")
 
 # load indexes
 idxloader = IndexesLoader(vocloader, unk_token=vocloader.word2idx['<UNK>'],
@@ -85,12 +86,12 @@ dataset = QADataset(padded_inputs,lengths_inputs,padded_targets,
                     masks_targets, max_len_trg)
 
 BATCH_SZ_train = 32
-BATCH_SZ_val = 3
+BATCH_SZ_val = 1
 batchloader = Batchloader()
 train_batches, val_batches = batchloader.torch_train_val_split(dataset,
                                                                BATCH_SZ_train,
                                                                BATCH_SZ_val,
-                                                               val_size=0.33)
+                                                               val_size=0.10)
 
 
 # make the encoder
@@ -124,7 +125,7 @@ dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.0005)
 model_optimizers = [enc_optimizer,dec_optimizer]
 clip = 50
 
-num_epochs = 301
+num_epochs = 201
 
 # for epoch in range(num_epochs):
 #     model.train()
@@ -151,3 +152,7 @@ train_epochs(train_batches, model_name, model, model_optimizers, criterion,
 #
 #
 # model = checkpoint['model']
+
+
+#validate(val_batches,model)
+inputInteraction(model,vocloader,txtpr,token,idxloader,padder)

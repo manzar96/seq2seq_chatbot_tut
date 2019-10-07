@@ -197,6 +197,44 @@ def validate( val_batches, model):
                 print("+++++++++++++++++++++")
 
 
+def inputInteraction(model, vocloader,text_preprocessor,text_tokenizer,
+                      idx_loader,padder):
+    max_len = model.max_target_len
+    input_sentence = ""
+    while True:
+        try:
+            # Get input response:
+            input_sentence = input('>')
+            # Check if it is quit case
+            if input_sentence == 'q' or input_sentence == 'quit': break
+            # Process sentence
+            input_filt = text_preprocessor.process_text([input_sentence])
+            input_tokens = text_tokenizer.word_tokenization(input_filt)
+
+            input_indexes = idx_loader.get_indexes(input_tokens)
+
+            input_length = [len(input_indexes[0])]
+            padded_input = padder.zeroPadding(input_indexes,max_len)
+            padded_input = torch.LongTensor(padded_input).cuda()
+
+            input_length = torch.LongTensor(input_length).cuda()
+
+            dec_outs,dec_hidden = model.evaluate(padded_input,input_length)
+
+            out_logits = F.log_softmax(dec_outs[0], dim=1)
+            _, out_indexes = torch.max(out_logits, dim=1)
+            #print(out_indexes)
+            decoded_words = [vocloader.idx2word[int(index)] for index in
+                             out_indexes]
+            print("Response: ", decoded_words)
+
+            print("+++++++++++++++++++++")
+
+        except KeyError:
+            print("Error:Encountered unknown word")
+
+
+
 
 
 

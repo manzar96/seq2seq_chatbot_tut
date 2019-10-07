@@ -183,7 +183,7 @@ class DecoderLSTM(nn.Module):
                 # print("topi: ",topi.shape)
                 # topi = torch.squeeze(topi, dim=1)
 
-                top_index = F.softmax(current_output, dim=0)
+                top_index = F.softmax(current_output, dim=1)
                 value,pos_index = top_index.max(dim=1)
                 dec_input = [index for index in pos_index]
                 dec_input = torch.LongTensor(dec_input)
@@ -309,7 +309,7 @@ class EncoderDecoder(nn.Module):
                 # print("topi: ",topi.shape)
                 # topi = torch.squeeze(topi, dim=1)
 
-                top_index = F.softmax(current_output, dim=0)
+                top_index = F.softmax(current_output, dim=1)
                 value, pos_index = top_index.max(dim=1)
                 #top1 = current_output.topk(1)
                 #print("top1     ",top1)
