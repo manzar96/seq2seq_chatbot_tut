@@ -117,6 +117,16 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
 
     print("Training...")
     model.train()
+
+    directory = os.path.join(save_dir, model_name, corpus_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    infofile = open(os.path.join(directory, 'model_info.txt'), 'w')
+    print(model_name, file=infofile)
+    print( model,file=infofile)
+    infofile.close()
+
     for epoch in range(num_epochs+1):
         avg_epoch_loss = 0
 
@@ -136,10 +146,7 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
 
         # Save checkpoint
         if epoch % save_every == 0:
-            directory = os.path.join(save_dir, model_name, corpus_name)
 
-            if not os.path.exists(directory):
-                os.makedirs(directory)
 
             if isinstance(model_optimizer, list):
                 torch.save({
