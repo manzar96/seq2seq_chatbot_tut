@@ -124,7 +124,9 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
 
     infofile = open(os.path.join(directory, 'model_info.txt'), 'w')
     print(model_name, file=infofile)
-    print( model,file=infofile)
+    print("Model architecture:  ", model,file=infofile)
+    print("Model optimizer:     ", model_optimizer,file=infofile)
+    print("Loss function:       ",criterion,file=infofile)
     infofile.close()
 
     for epoch in range(num_epochs+1):

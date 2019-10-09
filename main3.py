@@ -120,12 +120,12 @@ print(model)
 # select optimizers,loss function and clipping value
 criterion = nn.CrossEntropyLoss(ignore_index=vocloader.word2idx['<PAD>'],
                                 reduction='mean')
-enc_optimizer = torch.optim.Adam(enc.parameters(),lr=0.0001)
-dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.0005)
+enc_optimizer = torch.optim.Adam(enc.parameters(),lr=0.001)
+dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.005)
 model_optimizers = [enc_optimizer,dec_optimizer]
 clip = 50
 
-num_epochs = 201
+num_epochs = 251
 
 # for epoch in range(num_epochs):
 #     model.train()
@@ -135,10 +135,10 @@ num_epochs = 201
 #         avg_epoch_loss)))
 
 
-model_name = "simple_encdec"
+model_name = "simple_encdec_lr_0001"
 save_dir = "/media/manzar/Data/toshiba_temp/diplwmatiki/chatbot/saved_models"
 print_every = 5
-save_every = 20
+save_every = 50
 corpus_name = "MovieCorpus_Cornell"
 train_epochs(train_batches, model_name, model, model_optimizers, criterion,
              save_dir, num_epochs, print_every, save_every, corpus_name,clip)

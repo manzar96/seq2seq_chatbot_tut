@@ -45,7 +45,7 @@ data_tok,quest_len,ans_len = threshold_filtering(min_len,max_len,data_tok,quest_
 print(quest_len)
 # Create voc with indexes
 # at first we create custom embeddings
-emb_dim = 300
+emb_dim = 100
 pad_token_idx = 0
 end_token_idx = 2
 unk_token_idx = 3
@@ -54,10 +54,10 @@ tag_dict = {'<PAD>': np.zeros(emb_dim), '<SOT>': np.random.rand(emb_dim),
             '<EOS>': np.random.rand(emb_dim), '<UNK>': np.random.rand(emb_dim)}
 
 vocloader = EmbVoc(tag_dict)
-# vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/'
-#                          'glove/glove.6B/glove.6B.100d.txt')
-vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
-                         '/GoogleNews-vectors-negative300.bin',sel="gensim")
+vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/'
+                         'glove/glove.6B/glove.6B.100d.txt')
+# vocloader.add_embeddings('/home/manzar/Desktop/diplwmatiki/word2vec'
+#                          '/GoogleNews-vectors-negative300.bin',sel="gensim")
 
 
 print(vocloader.idx2word[16751])
@@ -118,10 +118,7 @@ teacher_forcing_rat =0.6
 model = EncoderDecoder(enc,dec,vocloader,teacher_forcing_rat)
 
 # load my model:
-checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki'
-                            '/chatbot'
-               '/saved_models/simple_encdec/MovieCorpus_Cornell/300_checkpoint'
-                        '.tar')
+checkpoint = torch.load('/media/manzar/Data/toshiba_temp/diplwmatiki/chatbot/saved_models/simple_encdec_lr_0001/MovieCorpus_Cornell/50_checkpoint.tar')
 
 
 model.load_state_dict(checkpoint['model'])
