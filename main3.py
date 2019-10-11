@@ -21,8 +21,8 @@ quest, ans = x.load_data('/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          '/home/manzar/Desktop/diplwmatiki/chatbot/data/'
                          'movie_conversations.txt')
 
-quest = quest[:10000]
-ans = ans[:10000]
+quest = quest[:400]
+ans = ans[:400]
 
 # concatenate data for easier preprocessing, but keep lengths
 quest_len = len(quest)

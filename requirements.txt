@@ -14,7 +14,6 @@ murmurhash==1.0.2
 nltk==3.4.5
 numpy==1.17.2
 pandas==0.25.1
-pkg-resources==0.0.0
 plac==0.9.6
 preshed==2.0.1
 python-dateutil==2.8.0
