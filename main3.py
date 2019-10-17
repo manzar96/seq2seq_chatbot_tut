@@ -111,7 +111,7 @@ dec = DecoderLSTM_v2(vocloader.embeddings, dec_hidden_size, dec_output_size,
 
 
 # make the encoder decoder model
-teacher_forcing_rat =0.6
+teacher_forcing_rat = 1
 model = EncoderDecoder(enc,dec,vocloader,teacher_forcing_rat)
 model.cuda()
 print(model)
@@ -125,7 +125,7 @@ dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.005)
 model_optimizers = [enc_optimizer,dec_optimizer]
 clip = 50
 
-num_epochs = 251
+num_epochs = 100
 
 # for epoch in range(num_epochs):
 #     model.train()
@@ -138,7 +138,7 @@ num_epochs = 251
 model_name = "simple_encdec_lr_0001"
 save_dir = "/media/manzar/Data/toshiba_temp/diplwmatiki/chatbot/saved_models"
 print_every = 5
-save_every = 50
+save_every = 10
 corpus_name = "MovieCorpus_Cornell"
 train_epochs(train_batches, model_name, model, model_optimizers, criterion,
              save_dir, num_epochs, print_every, save_every, corpus_name,clip)
