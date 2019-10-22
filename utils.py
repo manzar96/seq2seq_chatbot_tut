@@ -129,6 +129,7 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
     print("Loss function:       ",criterion,file=infofile)
     infofile.close()
 
+    logfile = open(os.path.join(directory, 'log_file.txt'), 'w')
     for epoch in range(num_epochs+1):
         avg_epoch_loss = 0
 
@@ -145,6 +146,9 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
             print("Epoch {}; Percent complete: {:.1f}%; Average Epoch loss: {"
                   ":.4f}".format(epoch, epoch / num_epochs * 100,
                                  avg_epoch_loss))
+            print("Epoch {}; Percent complete: {:.1f}%; Average Epoch loss: {"
+                  ":.4f}".format(epoch, epoch / num_epochs * 100,
+                                 avg_epoch_loss),file=logfile)
 
         # Save checkpoint
         if epoch % save_every == 0:
@@ -169,6 +173,8 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
 
                 }, os.path.join(directory, '{}_{}.tar'.format(epoch,
                                                               'checkpoint')))
+    logfile.close()
+
 
 def validate( val_batches, model):
     """
