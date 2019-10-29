@@ -21,6 +21,7 @@ class SequenceCollator(object):
         targets = mktensor(targets, device=self.device, dtype=torch.long)
         return inputs, targets, lengths
 
+
 class Seq2SeqCollator(object):
     def __init__(self, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
