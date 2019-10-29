@@ -73,11 +73,13 @@ class MovieCorpusDataset(Dataset):
 
 if __name__ == '__main__':
     from slp.util.embeddings import EmbeddingsLoader
+    from torchvision.transforms import Compose
 
     loader = EmbeddingsLoader(
-        '../cache/glove.6B.50d.txt', 50)
+        '../../cache/glove.6B.50d.txt', 50)
     word2idx, _, embeddings = loader.load()
-    transforms = SpacyTokenizer(ToTokenIds(word2idx))
+
+    transforms = Compose([SpacyTokenizer(), ToTokenIds(word2idx)])
     data = MovieCorpusDataset('../../data/', transforms=transforms)
 
     print(len(data))
