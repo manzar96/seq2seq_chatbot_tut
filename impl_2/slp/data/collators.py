@@ -22,33 +22,6 @@ class SequenceCollator(object):
         return inputs, targets, lengths
 
 
-class Task71Collator(SequenceCollator):
-    # For now it's kept the same, but we probably will have to return ids
-    pass
-
-
-class Task72Collator(object):
-    def __init__(self, pad_indx=0, device='cpu'):
-        self.pad_indx = pad_indx
-        self.device = device
-
-    def __call__(self, batch):
-        inputs1, targets1, inputs2, targets2, label = map(list, zip(*batch))
-        lengths1 = torch.tensor([len(s) for s in inputs1], device=self.device)
-        lengths2 = torch.tensor([len(s) for s in inputs2], device=self.device)
-        # Pad and convert to tensor
-        inputs1 = (pad_sequence(inputs1,
-                                batch_first=True,
-                                padding_value=self.pad_indx)
-                   .to(self.device))
-        inputs2 = (pad_sequence(inputs2,
-                                batch_first=True,
-                                padding_value=self.pad_indx)
-                   .to(self.device))
-
-        targets1 = mktensor(targets1, device=self.device, dtype=torch.long)
-        targets2 = mktensor(targets2, device=self.device, dtype=torch.long)
-        return inputs1, targets1, lengths1, inputs2, targets2, lengths2, label
 
 
 class TransformerCollator(object):
