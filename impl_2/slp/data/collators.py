@@ -22,8 +22,6 @@ class SequenceCollator(object):
         return inputs, targets, lengths
 
 
-
-
 class TransformerCollator(object):
     def __init__(self, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
