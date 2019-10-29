@@ -92,6 +92,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+env_chatbot_impl2/
 
 # Spyder project settings
 .spyderproject
