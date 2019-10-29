@@ -290,7 +290,7 @@ class SequentialTrainer(Trainer):
         return y_pred, targets
 
 
-class Seq2seqTrainer(Trainer):
+class Seq2SeqTrainer(Trainer):
     def parse_batch(
             self,
             batch: List[torch.Tensor]) -> Tuple[torch.Tensor, ...]:
