@@ -22,6 +22,29 @@ class SequenceCollator(object):
         return inputs, targets, lengths
 
 
+class Seq2SeqCollator(object):
+    def __init__(self, pad_indx=0, device='cpu'):
+        self.pad_indx = pad_indx
+        self.device = device
+
+    def __call__(self, batch):
+        inputs, targets = map(list, zip(*batch))
+        inputs_lengths = torch.tensor([len(s) for s in inputs],
+                                     device=self.device)
+        targets_lengths = torch.tensor([len(s) for s in inputs],
+                                     device=self.device)
+        # Pad and convert to tensor
+        padded_inputs = (pad_sequence(inputs, batch_first=True,
+                                      padding_value=self.pad_indx).to(
+            self.device))
+
+        padded_targets = (pad_sequence(targets, batch_first=True,
+                                      padding_value=self.pad_indx).to(
+            self.device))
+
+        #targets = mktensor(targets, device=self.device, dtype=torch.long)
+
+        return padded_inputs, inputs_lengths, padded_targets, targets_lengths
 
 
 class TransformerCollator(object):
