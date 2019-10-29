@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 from slp.config.moviecorpus import MOVIECORPUS_URL
 from slp.util.system import download_url
-
+from slp.data.transforms import *
 
 class MovieCorpusDataset(Dataset):
     def __init__(self, directory, transforms=None, train=True):
@@ -70,8 +70,15 @@ class MovieCorpusDataset(Dataset):
         return question, answer
 
 
+
 if __name__ == '__main__':
-    data = MovieCorpusDataset('../../data/')
+    from slp.util.embeddings import EmbeddingsLoader
+
+    loader = EmbeddingsLoader(
+        '../cache/glove.6B.50d.txt', 50)
+    word2idx, _, embeddings = loader.load()
+    transforms = SpacyTokenizer(ToTokenIds(word2idx))
+    data = MovieCorpusDataset('../../data/', transforms=transforms)
 
     print(len(data))
     print(data[5])
