@@ -153,7 +153,7 @@ class Decoder(nn.Module):
             dropout=0.1, rnn_type='lstm', packed_sequence=True,
             attention=False, device='cpu')
         self.max_target_len = max_target_len
-        self.linear = nn.Linear(self.hidden_size, self.output_size)
+        self.linear = nn.Linear(hidden_size, output_size)
 
     def forward(self, dec_input, dec_hidden):
 
@@ -166,10 +166,11 @@ class Decoder(nn.Module):
 
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder, decoder,
-                 teacher_forcing_ratio=0):
+                 teacher_forcing_ratio=0, device='cpu'):
         super(EncoderDecoder, self).__init__()
 
         # initialize the encoder and decoder
+        self.device = device
         self.encoder = encoder
         self.decoder = decoder
         self.max_target_len = self.decoder.max_target_len

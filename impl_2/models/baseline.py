@@ -4,6 +4,7 @@ import torch.nn as nn
 from ignite.metrics import Loss
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
+from torchvision.transforms import Compose
 
 from slp.util.embeddings import EmbeddingsLoader
 from slp.data.movies_corpus_dataset import MovieCorpusDataset
@@ -54,17 +55,20 @@ def train_test_split(dataset, batch_train, batch_val,
 
     train_indices = indices[test_split:]
     val_indices = indices[:test_split]
-    return dataloaders_from_indices(train_indices, val_indices, batch_train, batch_val)
+    return dataloaders_from_indices(dataset, train_indices, val_indices,
+                                    batch_train, batch_val)
 
 
 def kfold_split(dataset, batch_train, batch_val, k=5, shuffle=True, seed=None):
     kfold = KFold(n_splits=k, shuffle=shuffle, random_state=seed)
     for train_indices, val_indices in kfold.split(dataset):
-        yield dataloaders_from_indices(train_indices, val_indices, batch_train, batch_val)
+        yield dataloaders_from_indices(dataset, train_indices, val_indices,
+                                       batch_train, batch_val)
 
-def trainer_factory(embeddings,device=DEVICE):
+
+def trainer_factory(embeddings, device=DEVICE):
     encoder = Encoder(hidden_size=254, embeddings=embeddings, device=DEVICE)
-    decoder = Decoder(max_target_len=14, hidden_size=254,
+    decoder = Decoder(max_target_len=14, output_size=43, hidden_size=254,
                       embeddings=embeddings, device=DEVICE)
 
     model = EncoderDecoder(encoder, decoder, device=DEVICE)
@@ -89,6 +93,7 @@ def trainer_factory(embeddings,device=DEVICE):
     return trainer
 
 
+import os
 if __name__ == '__main__':
     loader = EmbeddingsLoader(
         '../cache/glove.6B.50d.txt', 50)
@@ -98,8 +103,9 @@ if __name__ == '__main__':
     to_token_ids = ToTokenIds(word2idx)
     to_tensor = ToTensor(device='cpu')
 
-    dataset = MovieCorpusDataset('../../data/', transforms=[], train=True)
-    dataset = dataset.map(tokenizer).map(to_token_ids).map(to_tensor)
+    transforms = Compose([tokenizer, to_token_ids,to_tensor])
+    dataset = MovieCorpusDataset('../data/', transforms=transforms, train=True)
+    #dataset = dataset.map(tokenizer).map(to_token_ids).map(to_tensor)
 
     if KFOLD:
         cv_scores = []
