@@ -179,8 +179,7 @@ class EncoderDecoder(nn.Module):
 
         batch_size = input_seq.shape[0]
 
-        encoder_output = self.encoder(input_seq,
-                                                      lengths_inputs)
+        encoder_output = self.encoder(input_seq, lengths_inputs)
         print(encoder_output)
 
         # decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
