@@ -113,3 +113,52 @@ class WordRNN(nn.Module):
         else:
             out = last_hidden
         return out
+
+
+class Encoder(nn.Module):
+
+    def __init__(self, hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu'):
+
+        super(Encoder, self).__init__()
+        self.device = device
+        self.encoder = WordRNN(hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu')
+
+
+    def forward(self, input_seq, input_lengths, hidden=None):
+            enc_out = self.encoder(input_seq,input_lengths)
+            return enc_out
+
+
+class Decoder(nn.Module):
+    def __init__(self, output_size, max_target_len, hidden_size, embeddings,
+                 embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu'):
+
+        super(Decoder, self).__init__()
+        self.device = device
+        self.decoder = WordRNN(hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu')
+        self.max_target_len = max_target_len
+        self.linear = nn.Linear(self.hidden_size, self.output_size)
+
+    def forward(self, dec_input, dec_hidden):
+
+        dec_out = self.decoder(dec_input, dec_hidden)
+        # decoder output equals to decoder hidden
+        out = self.linear(dec_out)
+        #we return the output and the decoder hidden state
+        return out, dec_out
