@@ -114,7 +114,7 @@ dec = DecoderLSTM_v2(vocloader.embeddings, dec_hidden_size, dec_output_size,
 
 # make the encoder decoder model
 teacher_forcing_rat = 1
-model = EncoderDecoder(enc, dec, vocloader, teacher_forcing_rat)
+model = EncoderDecoder(enc, dec, vocloader, teacher_forcing_rat, device=device)
 model.to(device)
 print(model)
 
@@ -127,7 +127,7 @@ dec_optimizer = torch.optim.Adam(dec.parameters(),lr=0.005)
 model_optimizers = [enc_optimizer,dec_optimizer]
 clip = 50
 
-num_epochs = 20
+num_epochs = 51
 print_every = 5
 save_every = 10
 
@@ -147,4 +147,4 @@ train_epochs(train_batches, model_name, model, model_optimizers, criterion,
 
 
 #validate(val_batches,model)
-inputInteraction(model,vocloader,txtpr,token,idxloader,padder)
+inputInteraction(model,vocloader,txtpr,token,idxloader,padder,device=device)
