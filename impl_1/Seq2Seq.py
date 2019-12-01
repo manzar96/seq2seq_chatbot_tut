@@ -265,35 +265,27 @@ class EncoderDecoder(nn.Module):
         self.max_target_len = self.decoder.max_target_len
         self.teacher_forcing_ratio = teacher_forcing_ratio
         self.vocloader = vocloader  # vocloader is needed to know  the SOT
+        # index for the decoder!
         self.device = device
-        # index fore the decoder!
+
 
     def forward(self, input_seq, lengths_inputs, target_seq):
-
         batch_size = input_seq.shape[0]
-
         encoder_output, encoder_hidden = self.encoder(input_seq, lengths_inputs)
-
-        decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
+        decoder_input = [[self.vocloader.word2idx['<GO>'] for _ in range(
             batch_size)]]
-
         decoder_input = torch.LongTensor(decoder_input)
-
         decoder_input = decoder_input.transpose(0, 1)
         decoder_hidden = encoder_hidden[:self.decoder.num_layers]
         decoder_input = decoder_input.to(self.device)
         # Determine if we are using teacher forcing this iteration
         use_teacher_forcing = True if random.random() \
                                       < self.teacher_forcing_ratio else False
-
         decoder_all_outputs = []
         if use_teacher_forcing:
-
             for t in range(0, self.max_target_len):
-
                 decoder_output, decoder_hidden = self.decoder(decoder_input,
                                                               decoder_hidden)
-
                 decoder_all_outputs.append(torch.squeeze(decoder_output, dim=1))
                 # Teacher forcing: next input is current target
                 decoder_input = target_seq[:, t]
@@ -301,24 +293,12 @@ class EncoderDecoder(nn.Module):
 
         else:
             for t in range(0, self.max_target_len):
-
                 decoder_output, decoder_hidden = self.decoder(decoder_input,
                                                               decoder_hidden)
-
                 decoder_all_outputs.append(torch.squeeze(decoder_output, dim=1))
-
-                # No Teacher forcing: next input is previous output
                 current_output = torch.squeeze(decoder_output, dim=1)
-                # print("current out",current_output.shape)
-                # _, topi = current_output.topk(1)
-                # print("topi: ",topi.shape)
-                # topi = torch.squeeze(topi, dim=1)
-
-                top_index = F.softmax(current_output, dim=1)
+                top_index = F.log_softmax(current_output, dim=1)
                 value, pos_index = top_index.max(dim=1)
-                #top1 = current_output.topk(1)
-                #print("top1     ",top1)
-                #print("pos_index    ",pos_index)
                 decoder_input = [index for index in pos_index]
                 decoder_input = torch.LongTensor(decoder_input)
                 decoder_input = torch.unsqueeze(decoder_input,dim=1)
@@ -327,47 +307,28 @@ class EncoderDecoder(nn.Module):
         return decoder_all_outputs, decoder_hidden
 
     def evaluate(self, input_seq, lengths_inputs):
-
         batch_size = input_seq.shape[0]
-
         encoder_output, encoder_hidden = self.encoder(input_seq, lengths_inputs)
-
-        decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
+        decoder_input = [[self.vocloader.word2idx['<GO>'] for _ in range(
             batch_size)]]
-
         decoder_input = torch.LongTensor(decoder_input)
-
         decoder_input = decoder_input.transpose(0, 1)
         decoder_hidden = encoder_hidden[:self.decoder.num_layers]
         decoder_input = decoder_input.to(self.device)
-
         decoder_all_outputs = []
 
         for t in range(0, self.max_target_len):
-
             decoder_output, decoder_hidden = self.decoder(decoder_input,
                                                           decoder_hidden)
-
             decoder_all_outputs.append(torch.squeeze(decoder_output,
                                                      dim=1).tolist())
-
-            # No Teacher forcing: next input is previous output
             current_output = torch.squeeze(decoder_output, dim=1)
-            # print("current out",current_output.shape)
-            # _, topi = current_output.topk(1)
-            # print("topi: ",topi.shape)
-            # topi = torch.squeeze(topi, dim=1)
-
             top_index = F.softmax(current_output, dim=0)
             value, pos_index = top_index.max(dim=1)
-            #top1 = current_output.topk(1)
-            #print("top1     ",top1)
-            #print("pos_index    ",pos_index)
             decoder_input = [index for index in pos_index]
             decoder_input = torch.LongTensor(decoder_input)
             decoder_input = torch.unsqueeze(decoder_input,dim=1)
             decoder_input = decoder_input.to(self.device)
-
         decoder_all_outputs = torch.FloatTensor(
             decoder_all_outputs).transpose(0,1)
         return decoder_all_outputs, decoder_hidden

@@ -59,7 +59,6 @@ def train(train_batches, model, model_optimizer, criterion, clip=None,
     Model optimizer can be a list of optimizers if wanted(e.g. if we want to
     have different lr for encoder and decoder).
     """
-
     if not isinstance(model_optimizer, list):
         model_optimizer.zero_grad()
     else:
@@ -67,33 +66,24 @@ def train(train_batches, model, model_optimizer, criterion, clip=None,
             optimizer.zero_grad()
     epoch_loss = 0
     for index, batch in enumerate(train_batches):
-
         inputs, lengths_inputs, targets, masks_targets = batch
         inputs = inputs.long().to(device)
         targets = targets.long().to(device)
         lengths_inputs.to(device)
         masks_targets.to(device)
-
-
-
-
         if not isinstance(model_optimizer, list):
             model_optimizer.zero_grad()
         else:
             for optimizer in model_optimizer:
                 optimizer.zero_grad()
-
         decoder_outputs, decoder_hidden = model(inputs, lengths_inputs, targets)
-
         # calculate and accumulate loss
         loss = 0
         n_totals = 0
         for time in range(0, len(decoder_outputs)):
-
             loss += criterion(decoder_outputs[time], targets[:, time].long())
             n_totals += 1
         loss.backward()
-
         epoch_loss += loss.item() / n_totals
 
         # Clip gradients: gradients are modified in place
@@ -214,7 +204,7 @@ def validate( val_batches, model,device='cpu'):
 
 
 def inputInteraction(model, vocloader,text_preprocessor,text_tokenizer,
-                      idx_loader,padder):
+                      idx_loader,padder,device):
     max_len = model.max_target_len
     input_sentence = ""
     while True:
