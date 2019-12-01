@@ -111,7 +111,7 @@ dec = DecoderLSTM_v2(vocloader.embeddings, dec_hidden_size, dec_output_size,
 # make the encoder decoder model
 teacher_forcing_rat = 1
 model = EncoderDecoder(enc,dec,vocloader,teacher_forcing_rat)
-model.cuda()
+model.to(device)
 print(model)
 
 

@@ -8,7 +8,8 @@ from torch.autograd import Variable
 class EncoderLSTM(nn.Module):
 
     def __init__(self, weights_matrix, hidden_size,  num_layers=1,
-                 dropout=0, bidirectional=False, batch_first=False):
+                 dropout=0, bidirectional=False, batch_first=False,
+                 device='cpu'):
         super(EncoderLSTM, self).__init__()
         self.vocab_size, self.input_size = weights_matrix.shape
         self.num_layers = num_layers
@@ -16,6 +17,7 @@ class EncoderLSTM(nn.Module):
         self.bidirectional = bidirectional
         self.dropout = (0 if self.num_layers == 1 else dropout)
         self.batch_first = batch_first
+        self.device = device
 
         if self.bidirectional:
             # Bidirectional has twice the amount of hidden variables so if you
@@ -94,7 +96,7 @@ class EncoderLSTM(nn.Module):
 class DecoderLSTM(nn.Module):
     def __init__(self, weights_matrix, hidden_size, output_size,
                  max_target_len, num_layers=1, dropout=0, bidirectional=False,
-                 batch_first=False):
+                 batch_first=False,device='cpu'):
 
         super(DecoderLSTM, self).__init__()
         self.vocab_size, self.input_size = weights_matrix.shape
@@ -105,6 +107,7 @@ class DecoderLSTM(nn.Module):
         self.batch_first = batch_first
         self.dropout = (0 if self.num_layers == 1 else dropout)
         self.max_target_len = max_target_len
+        self.device = device
 
         if self.bidirectional:
             self.embedding = self.create_emb_layer(weights_matrix,
@@ -140,7 +143,7 @@ class DecoderLSTM(nn.Module):
         return embedding
 
     def forward_step(self, dec_input, dec_hidden):
-        dec_input.cuda()
+        dec_input.to(self.device)
         embedded = self.embedding(dec_input)
         decoder_output, decoder_hidden = self.decoder(embedded,
                                                       dec_hidden)
@@ -188,7 +191,7 @@ class DecoderLSTM(nn.Module):
                 dec_input = [index for index in pos_index]
                 dec_input = torch.LongTensor(dec_input)
                 dec_input = torch.unsqueeze(dec_input,dim=1)
-                dec_input = dec_input.cuda()
+                dec_input = dec_input.to(self.device)
 
         return decoder_all_outputs, dec_hidden
 
@@ -196,7 +199,7 @@ class DecoderLSTM(nn.Module):
 class DecoderLSTM_v2(nn.Module):
     def __init__(self, weights_matrix, hidden_size, output_size,
                  max_target_len, num_layers=1, dropout=0, bidirectional=False,
-                 batch_first=False):
+                 batch_first=False,device='cpu'):
 
         super(DecoderLSTM_v2, self).__init__()
         self.vocab_size, self.input_size = weights_matrix.shape
@@ -207,6 +210,7 @@ class DecoderLSTM_v2(nn.Module):
         self.batch_first = batch_first
         self.dropout = (0 if self.num_layers == 1 else dropout)
         self.max_target_len = max_target_len
+        self.device = device
 
         if self.bidirectional:
             self.embedding = self.create_emb_layer(weights_matrix,
@@ -242,7 +246,7 @@ class DecoderLSTM_v2(nn.Module):
         return embedding
 
     def forward(self, dec_input, dec_hidden):
-        dec_input.cuda()
+        dec_input.to(self.device)
         embedded = self.embedding(dec_input)
         decoder_output, decoder_hidden = self.decoder(embedded,
                                                       dec_hidden)
@@ -252,7 +256,7 @@ class DecoderLSTM_v2(nn.Module):
 
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder, decoder, vocloader,
-                 teacher_forcing_ratio=0):
+                 teacher_forcing_ratio=0,device='cpu'):
         super(EncoderDecoder, self).__init__()
 
         # initialize the encoder and decoder
@@ -261,6 +265,7 @@ class EncoderDecoder(nn.Module):
         self.max_target_len = self.decoder.max_target_len
         self.teacher_forcing_ratio = teacher_forcing_ratio
         self.vocloader = vocloader  # vocloader is needed to know  the SOT
+        self.device = device
         # index fore the decoder!
 
     def forward(self, input_seq, lengths_inputs, target_seq):
@@ -276,7 +281,7 @@ class EncoderDecoder(nn.Module):
 
         decoder_input = decoder_input.transpose(0, 1)
         decoder_hidden = encoder_hidden[:self.decoder.num_layers]
-        decoder_input = decoder_input.cuda()
+        decoder_input = decoder_input.to(self.device)
         # Determine if we are using teacher forcing this iteration
         use_teacher_forcing = True if random.random() \
                                       < self.teacher_forcing_ratio else False
@@ -317,7 +322,7 @@ class EncoderDecoder(nn.Module):
                 decoder_input = [index for index in pos_index]
                 decoder_input = torch.LongTensor(decoder_input)
                 decoder_input = torch.unsqueeze(decoder_input,dim=1)
-                decoder_input = decoder_input.cuda()
+                decoder_input = decoder_input.to(self.device)
 
         return decoder_all_outputs, decoder_hidden
 
@@ -334,7 +339,7 @@ class EncoderDecoder(nn.Module):
 
         decoder_input = decoder_input.transpose(0, 1)
         decoder_hidden = encoder_hidden[:self.decoder.num_layers]
-        decoder_input = decoder_input.cuda()
+        decoder_input = decoder_input.to(self.device)
 
         decoder_all_outputs = []
 
@@ -361,7 +366,7 @@ class EncoderDecoder(nn.Module):
             decoder_input = [index for index in pos_index]
             decoder_input = torch.LongTensor(decoder_input)
             decoder_input = torch.unsqueeze(decoder_input,dim=1)
-            decoder_input = decoder_input.cuda()
+            decoder_input = decoder_input.to(self.device)
 
         decoder_all_outputs = torch.FloatTensor(
             decoder_all_outputs).transpose(0,1)
