@@ -1,13 +1,13 @@
-from impl_1.MovieCorpus_Dataloader import MovieCorpusDataloader
-from impl_1.text_preprocessor import TextProcessor
-from impl_1.Text_Tokenizer import TextTokenizer
-from impl_1.Voc import EmbVoc
-from impl_1.IndexesLoader import IndexesLoader
-from impl_1.Padder import DataPadderMasker
-from impl_1.QADataset import QADataset
-from impl_1.BatchLoader import Batchloader
-from impl_1.Seq2Seq import *
-from impl_1.utils import *
+from MovieCorpus_Dataloader import MovieCorpusDataloader
+from text_preprocessor import TextProcessor
+from Text_Tokenizer import TextTokenizer
+from Voc import EmbVoc
+from IndexesLoader import IndexesLoader
+from Padder import DataPadderMasker
+from QADataset import QADataset
+from BatchLoader import Batchloader
+from Seq2Seq import *
+from utils import *
 
 import numpy as np
 
