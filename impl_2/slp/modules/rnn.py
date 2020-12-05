@@ -113,3 +113,175 @@ class WordRNN(nn.Module):
         else:
             out = last_hidden
         return out
+
+
+class Encoder(nn.Module):
+
+    def __init__(self, hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu'):
+
+        super(Encoder, self).__init__()
+        self.device = device
+        self.encoder = WordRNN(hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu')
+
+
+    def forward(self, input_seq, input_lengths, hidden=None):
+            enc_out = self.encoder(input_seq,input_lengths)
+            return enc_out
+
+
+class Decoder(nn.Module):
+    def __init__(self, output_size, max_target_len, hidden_size, embeddings,
+                 embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu'):
+
+        super(Decoder, self).__init__()
+        self.device = device
+        self.decoder = WordRNN(hidden_size, embeddings, embeddings_dropout=.1,
+                 finetune_embeddings=False,
+            batch_first=True, layers=1, bidirectional=False, merge_bi='cat',
+            dropout=0.1, rnn_type='lstm', packed_sequence=True,
+            attention=False, device='cpu')
+        self.max_target_len = max_target_len
+        self.linear = nn.Linear(hidden_size, output_size)
+
+    def forward(self, dec_input, dec_hidden):
+
+        dec_out = self.decoder(dec_input, dec_hidden)
+        # decoder output equals to decoder hidden
+        out = self.linear(dec_out)
+        # we return the output and the decoder hidden state
+        return out, dec_out
+
+
+class EncoderDecoder(nn.Module):
+    def __init__(self, encoder, decoder,
+                 teacher_forcing_ratio=0, device='cpu'):
+        super(EncoderDecoder, self).__init__()
+
+        # initialize the encoder and decoder
+        self.device = device
+        self.encoder = encoder
+        self.decoder = decoder
+        self.max_target_len = self.decoder.max_target_len
+        self.teacher_forcing_ratio = teacher_forcing_ratio
+
+    def forward(self, input_seq, lengths_inputs, target_seq):
+
+        batch_size = input_seq.shape[0]
+
+        encoder_output = self.encoder(input_seq, lengths_inputs)
+        print(encoder_output)
+
+        # decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
+        #     batch_size)]]
+
+        """
+        decoder_input = torch.LongTensor(decoder_input)
+
+        decoder_input = decoder_input.transpose(0, 1)
+        decoder_hidden = encoder_hidden[:self.decoder.num_layers]
+        decoder_input = decoder_input.cuda()
+        # Determine if we are using teacher forcing this iteration
+        use_teacher_forcing = True if random.random() \
+                                      < self.teacher_forcing_ratio else False
+
+        decoder_all_outputs = []
+        if use_teacher_forcing:
+
+            for t in range(0, self.max_target_len):
+                decoder_output, decoder_hidden = self.decoder(
+                    decoder_input,
+                    decoder_hidden)
+
+                decoder_all_outputs.append(
+                    torch.squeeze(decoder_output, dim=1))
+                # Teacher forcing: next input is current target
+                decoder_input = target_seq[:, t]
+                decoder_input = torch.unsqueeze(decoder_input, dim=1)
+
+        else:
+            for t in range(0, self.max_target_len):
+                decoder_output, decoder_hidden = self.decoder(
+                    decoder_input,
+                    decoder_hidden)
+
+                decoder_all_outputs.append(
+                    torch.squeeze(decoder_output, dim=1))
+
+                # No Teacher forcing: next input is previous output
+                current_output = torch.squeeze(decoder_output, dim=1)
+                # print("current out",current_output.shape)
+                # _, topi = current_output.topk(1)
+                # print("topi: ",topi.shape)
+                # topi = torch.squeeze(topi, dim=1)
+
+                top_index = F.softmax(current_output, dim=1)
+                value, pos_index = top_index.max(dim=1)
+                # top1 = current_output.topk(1)
+                # print("top1     ",top1)
+                # print("pos_index    ",pos_index)
+                decoder_input = [index for index in pos_index]
+                decoder_input = torch.LongTensor(decoder_input)
+                decoder_input = torch.unsqueeze(decoder_input, dim=1)
+                decoder_input = decoder_input.cuda()
+
+        return decoder_all_outputs, decoder_hidden
+
+    def evaluate(self, input_seq, lengths_inputs):
+
+        batch_size = input_seq.shape[0]
+
+        encoder_output, encoder_hidden = self.encoder(input_seq,
+                                                      lengths_inputs)
+
+        decoder_input = [[self.vocloader.word2idx['<SOT>'] for _ in range(
+            batch_size)]]
+
+        decoder_input = torch.LongTensor(decoder_input)
+
+        decoder_input = decoder_input.transpose(0, 1)
+        decoder_hidden = encoder_hidden[:self.decoder.num_layers]
+        decoder_input = decoder_input.cuda()
+
+        decoder_all_outputs = []
+
+        for t in range(0, self.max_target_len):
+            decoder_output, decoder_hidden = self.decoder(decoder_input,
+                                                          decoder_hidden)
+
+            decoder_all_outputs.append(torch.squeeze(decoder_output,
+                                                     dim=1).tolist())
+
+            # No Teacher forcing: next input is previous output
+            current_output = torch.squeeze(decoder_output, dim=1)
+            # print("current out",current_output.shape)
+            # _, topi = current_output.topk(1)
+            # print("topi: ",topi.shape)
+            # topi = torch.squeeze(topi, dim=1)
+
+            top_index = F.softmax(current_output, dim=0)
+            value, pos_index = top_index.max(dim=1)
+            # top1 = current_output.topk(1)
+            # print("top1     ",top1)
+            # print("pos_index    ",pos_index)
+            decoder_input = [index for index in pos_index]
+            decoder_input = torch.LongTensor(decoder_input)
+            decoder_input = torch.unsqueeze(decoder_input, dim=1)
+            decoder_input = decoder_input.cuda()
+
+        decoder_all_outputs = torch.FloatTensor(
+            decoder_all_outputs).transpose(0, 1)
+        return decoder_all_outputs, decoder_hidden
+        
+        """

@@ -52,13 +52,13 @@ def threshold_filtering(min_len,max_len,data,quest_len):
     return new_data, new_quest_len, new_ans_len
 
 
-def train(train_batches, model, model_optimizer, criterion, clip=None):
+def train(train_batches, model, model_optimizer, criterion, clip=None,
+          device='cpu'):
     """
     This function is used to train a Seq2Seq model.
     Model optimizer can be a list of optimizers if wanted(e.g. if we want to
     have different lr for encoder and decoder).
     """
-
     if not isinstance(model_optimizer, list):
         model_optimizer.zero_grad()
     else:
@@ -66,33 +66,24 @@ def train(train_batches, model, model_optimizer, criterion, clip=None):
             optimizer.zero_grad()
     epoch_loss = 0
     for index, batch in enumerate(train_batches):
-
         inputs, lengths_inputs, targets, masks_targets = batch
-        inputs = inputs.long().cuda()
-        targets = targets.long().cuda()
-        lengths_inputs.cuda()
-        masks_targets.cuda()
-
-
-
-
+        inputs = inputs.long().to(device)
+        targets = targets.long().to(device)
+        lengths_inputs.to(device)
+        masks_targets.to(device)
         if not isinstance(model_optimizer, list):
             model_optimizer.zero_grad()
         else:
             for optimizer in model_optimizer:
                 optimizer.zero_grad()
-
         decoder_outputs, decoder_hidden = model(inputs, lengths_inputs, targets)
-
         # calculate and accumulate loss
         loss = 0
         n_totals = 0
         for time in range(0, len(decoder_outputs)):
-
             loss += criterion(decoder_outputs[time], targets[:, time].long())
             n_totals += 1
         loss.backward()
-
         epoch_loss += loss.item() / n_totals
 
         # Clip gradients: gradients are modified in place
@@ -113,7 +104,7 @@ def train(train_batches, model, model_optimizer, criterion, clip=None):
 
 def train_epochs(training_batches, model_name, model, model_optimizer,
                  criterion, save_dir, num_epochs, print_every,
-                 save_every, corpus_name, clip=None):
+                 save_every, corpus_name, clip=None, device='cpu'):
 
     print("Training...")
     model.train()
@@ -136,10 +127,10 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
         # Train to all batches
         if clip is not None:
             avg_epoch_loss = train(training_batches, model, model_optimizer,
-                                   criterion, clip)
+                                   criterion, clip,device)
         else:
             avg_epoch_loss = train(training_batches, model, model_optimizer,
-                                   criterion)
+                                   criterion,device)
 
         # Print progress
         if epoch % print_every == 0:
@@ -176,7 +167,7 @@ def train_epochs(training_batches, model_name, model, model_optimizer,
     logfile.close()
 
 
-def validate( val_batches, model):
+def validate( val_batches, model,device='cpu'):
     """
     This function is used for validating the model!
     Model does not use "forward" but "evaluate , because we don't want to use
@@ -192,10 +183,10 @@ def validate( val_batches, model):
     with torch.no_grad():
         for index, batch in enumerate(val_batches):
             inputs, lengths_inputs, targets, masks_targets = batch
-            inputs = inputs.long().cuda()
-            targets = targets.long().cuda()
-            lengths_inputs.cuda()
-            masks_targets.cuda()
+            inputs = inputs.long().to(device)
+            targets = targets.long().to(device)
+            lengths_inputs.to(device)
+            masks_targets.to(device)
 
             decoder_outputs, decoder_hidden = model.evaluate(inputs,
                                                              lengths_inputs)
@@ -213,7 +204,7 @@ def validate( val_batches, model):
 
 
 def inputInteraction(model, vocloader,text_preprocessor,text_tokenizer,
-                      idx_loader,padder):
+                      idx_loader,padder,device):
     max_len = model.max_target_len
     input_sentence = ""
     while True:
@@ -230,9 +221,9 @@ def inputInteraction(model, vocloader,text_preprocessor,text_tokenizer,
 
             input_length = [len(input_indexes[0])]
             padded_input = padder.zeroPadding(input_indexes,max_len)
-            padded_input = torch.LongTensor(padded_input).cuda()
+            padded_input = torch.LongTensor(padded_input).to(device)
 
-            input_length = torch.LongTensor(input_length).cuda()
+            input_length = torch.LongTensor(input_length).to(device)
 
             dec_outs,dec_hidden = model.evaluate(padded_input,input_length)
 

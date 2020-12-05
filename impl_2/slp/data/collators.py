@@ -42,7 +42,7 @@ class Seq2SeqCollator(object):
                                       padding_value=self.pad_indx).to(
             self.device))
 
-        #targets = mktensor(targets, device=self.device, dtype=torch.long)
+        # targets = mktensor(targets, device=self.device, dtype=torch.long)
 
         return padded_inputs, inputs_lengths, padded_targets, targets_lengths
 
